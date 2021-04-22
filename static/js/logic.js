@@ -1,102 +1,89 @@
 // Store our API endpoint inside link
 var link = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
 
-// Perform a GET request to the query URL
-d3.json(link).then(function(data) {
-    
-  
-    // Once we get a response, send the data.features object to the createFeatures function
-    createFeatures(data.features);
+// create a map object
+var myMap = L.map("map", {
+    center: [38.06, -117.23],
+    zoom: 6
   });
 
-  function createFeatures(earthquakeData) {
-
-    // Define a function we want to run once for each feature in the features array
-    // Give each feature a popup describing the place and time of the earthquake
-    function onEachFeature(feature, layer) {
-      layer.bindPopup("<h3>Location: " + feature.properties.place +
-        "</h3><hr>"+"Magnitude: " + feature.properties.mag + 
-        "</h3><hr>"+"Depth: " + feature.geometry.coordinates[2]);
-    }
-
-    function circleSize(mag) {
-        return mag * 5;
-      }
-
- 
-    // Create a GeoJSON layer containing the features array on the earthquakeData object
-    var geojsonMarkerOptions = {
-        radius: 7,
-        fillColor: "#ff7800",
-        color: "#000",
-        weight: 1,
-        opacity: 1,
-        fillOpacity: 0.8
-    };
-
-    var earthquakes = L.geoJSON(earthquakeData, {
-        onEachFeature: onEachFeature, 
-        pointToLayer: function (feature, latlng) {
-            return L.circleMarker(latlng, geojsonMarkerOptions);
-        }
-
-
-    });
-
-    // Sending our earthquakes layer to the createMap function
-    createMap(earthquakes);
-  }
-
-  function createMap(earthquakes) {
-
-    // Define lightmap layer
-
-    var lightmap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
+//add base map
+L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
     attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
-    maxZoom: 18,
+    maxZoom: 14,
     id: "light-v10",
     accessToken: API_KEY
-  });
-
-   // Define a baseMaps object to hold our base layers
-   var baseMaps = {
-    // "Street Map": streetmap,
-    "Light Map": lightmap
-  };
-
-   // Create overlay object to hold our overlay layer
-   var overlayMaps = {
-    Earthquakes: earthquakes
-  };
-
-  // Create our map, giving it the earthquakes layer to display on load
-  var myMap = L.map("map", {
-    center: [
-        38.06, -117.23
-    ],
-    zoom: 6,
-    layers: [lightmap, earthquakes]
-  });
-
-  // Create a layer control
-  // Pass in our baseMaps and overlayMaps
-  // Add the layer control to the map
-  L.control.layers(baseMaps, overlayMaps, {
-    collapsed: false
   }).addTo(myMap);
 
-  // Set up the legend
+//use D3 to get data
+d3.json(link).then(function(data){
+
+    // array of objects location, mag, depth  
+    var magnitude = data.features.map(function(x) {
+        return x.properties.mag;
+      });
+    
+      var coordinates = data.features.map(function(x) {
+        return x.geometry.coordinates.slice(0,2).reverse();
+      });
+
+      var depth = data.features.map(function(x) {
+        return x.geometry.coordinates[2];
+      });
+
+
+
+      // Loop through the cities array and create one marker for each city object
+  for (var i = 0; i < data.features.length; i++) {
+
+    // Conditionals for countries points
+    var color = "";
+    if (depth[i] > -10 && depth[i] < 10) {
+      color = "lawngreen";
+    }
+    else if (depth[i] >= 10 && depth[i] < 30) {
+      color = "greenyellow";
+    }
+    else if (depth[i] >= 30 && depth[i] < 50) {
+      color = "gold";
+    }
+
+    else if (depth[i] >= 50 && depth[i] < 70) {
+        color = "orange";
+      }
+    else if (depth[i] >= 70 && depth[i] < 90) {
+        color = "salmon";
+      }
+    else {
+      color = "tomato";
+    }
+
+    // Add circles to map
+    L.circle(coordinates[i], {
+        Opacity: 0.5,
+        fillOpacity: 0.75,
+        weight: 0.3,
+        color: "black",
+        fillColor: color,
+        // Adjust radius
+        radius: depth[i] * 1400
+      }).bindPopup("<h1> Coordinates: " + coordinates[i] + "</h1> <hr> <h3>Magnitude: " + magnitude[i] + "</h1><hr> <h3>Depth: " + depth[i] + "</h3>").addTo(myMap);
+  
+  }
+
+    // Set up the legend
 var legend = L.control({ position: "bottomright" });
 
 legend.onAdd = function() {
   var div = L.DomUtil.create("div", "info legend");
-  var grades = ['TBD'];
-  var colors = [];
+  var grades = ['-10-10', '10-30', '30-50', '50-70', '70-90', '90+'];
+  var colors = ["lawngreen", "greenyellow", "gold", "orange", "salmon", "tomato"];
   var labels = [];
 
 
+
     grades.forEach(function(grade, index) {
-        labels.push("<div class = 'row'><li style=\"background-color: " + colors[index] +  "; width: 10px"+ "; height: 10px" + "\"></li>" + "<li>" + grade + "</li></div>");
+        labels.push("<li style=\"background-color: " + colors[index] + "\"></li>"+ grade + "</li>" );
     })
 
     div.innerHTML += "<ul>" + labels.join("") + "</ul>";
@@ -106,9 +93,5 @@ legend.onAdd = function() {
 // Adding legend to the map
 legend.addTo(myMap);
 
-  }
 
-
-
-
-
+});
