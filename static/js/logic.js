@@ -33,10 +33,10 @@ d3.json(link).then(function(data){
 
 
 
-      // Loop through the cities array and create one marker for each city object
+  
   for (var i = 0; i < data.features.length; i++) {
 
-    // Conditionals for countries points
+    // Conditionals for depth
     var color = "";
     if (depth[i] > -10 && depth[i] < 10) {
       color = "lawngreen";
@@ -76,14 +76,14 @@ var legend = L.control({ position: "bottomright" });
 
 legend.onAdd = function() {
   var div = L.DomUtil.create("div", "info legend");
-  var grades = ['-10-10', '10-30', '30-50', '50-70', '70-90', '90+'];
+  var grades = [' -10-10 ', ' 10-30 ', ' 30-50 ', ' 50-70 ', ' 70-90 ', ' 90+ '];
   var colors = ["lawngreen", "greenyellow", "gold", "orange", "salmon", "tomato"];
   var labels = [];
 
 
 
-    grades.forEach(function(grade, index) {
-        labels.push("<li style=\"background-color: " + colors[index] + "\"></li>"+ grade + "</li>" );
+    grades.forEach(function(grades, index) {
+        labels.push("<div class = 'row'><li style=\"background-color: " + colors[index] + "\"></li>"+ grades + "</li></div>" );
     })
 
     div.innerHTML += "<ul>" + labels.join("") + "</ul>";
